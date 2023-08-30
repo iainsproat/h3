@@ -240,6 +240,61 @@ describe("", () => {
 
       expect(resText).toEqual(message);
     });
+
+    it("can handle misbehaving clients that send invalid content-length", async () => {
+      app.use(
+        "/debug",
+        eventHandler(async (event) => {
+          return {
+            body: await readRawBody(event),
+            headers: getHeaders(event),
+          };
+        }),
+      );
+
+      app.use(
+        "/",
+        eventHandler((event) => {
+          return proxyRequest(event, url + "/debug", { fetch });
+        }),
+      );
+
+      const isNode16 = process.version.startsWith("v16.");
+      const body = isNode16
+        ? "This request body should not have been sent."
+        : new ReadableStream({
+            start(controller) {
+              controller.enqueue("This ");
+              controller.enqueue("request ");
+              controller.enqueue("body ");
+              controller.enqueue("should ");
+              controller.enqueue("not ");
+              controller.enqueue("have ");
+              controller.enqueue("been ");
+              controller.enqueue("sent.");
+              controller.close();
+            },
+          }).pipeThrough(new TextEncoderStream());
+
+      const res = await fetch(url + "/", {
+        method: "POST",
+        // @ts-ignore
+        duplex: "half",
+        body,
+        headers: {
+          "content-type": "application/octet-stream",
+          "x-custom": "hello",
+          "content-length": "0", // <-- invalid content-length
+        },
+      });
+      const resBody = await res.json();
+
+      expect(resBody.headers["content-type"]).toEqual(
+        "application/octet-stream",
+      );
+      expect(resBody.headers["x-custom"]).toEqual("hello");
+      // we do not care about the body
+    });
   });
 
   describe("multipleCookies", () => {
