@@ -293,7 +293,7 @@ describe("", () => {
       expect(resBody.body).toMatchInlineSnapshot(
         '"This is a streamed request."',
       );
-    })
+    });
   });
 
   describe("multipleCookies", () => {
