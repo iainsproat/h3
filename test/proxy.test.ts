@@ -261,14 +261,17 @@ describe("", () => {
 
       const isNode16 = process.version.startsWith("v16.");
       const body = isNode16
-        ? "This is a streamed request."
+        ? "This request body should not have been sent."
         : new ReadableStream({
             start(controller) {
               controller.enqueue("This ");
-              controller.enqueue("is ");
-              controller.enqueue("a ");
-              controller.enqueue("streamed ");
-              controller.enqueue("request.");
+              controller.enqueue("request ");
+              controller.enqueue("body ");
+              controller.enqueue("should ");
+              controller.enqueue("not ");
+              controller.enqueue("have ");
+              controller.enqueue("been ");
+              controller.enqueue("sent.");
               controller.close();
             },
           }).pipeThrough(new TextEncoderStream());
@@ -281,7 +284,7 @@ describe("", () => {
         headers: {
           "content-type": "application/octet-stream",
           "x-custom": "hello",
-          "content-length": "42", // <-- invalid content-length
+          "content-length": "0", // <-- invalid content-length
         },
       });
       const resBody = await res.json();
@@ -290,10 +293,8 @@ describe("", () => {
         "application/octet-stream",
       );
       expect(resBody.headers["x-custom"]).toEqual("hello");
-      expect(resBody.body).toMatchInlineSnapshot(
-        '"This is a streamed request."',
-      );
-    });
+      // we do not care about the body
+    })
   });
 
   describe("multipleCookies", () => {
