@@ -294,7 +294,7 @@ describe("", () => {
       );
       expect(resBody.headers["x-custom"]).toEqual("hello");
       // we do not care about the body
-    })
+    });
   });
 
   describe("multipleCookies", () => {
